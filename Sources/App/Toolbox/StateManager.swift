@@ -143,6 +143,11 @@ class StateManager {
     static func isMuted(chat: TelegramChat, username: String, at: Int? = nil) -> Bool {
         var muted = false
 
+        var username = username
+        if !username.starts(with: "@") {
+            username = "@\(username)"
+        }
+
         queue.sync {
             if let at = at {
                 muted = (StateManager.mutedMembers[chat] ?? []).contains(where: { $0.username == username && $0.until ?? Int.max > at })
