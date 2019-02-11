@@ -8,6 +8,7 @@
 import TelegramBot
 import TelegramBotPromiseKit
 import PromiseKit
+import Dispatch
 
 /// May only be called if no command is able to parse the message.
 class MessageParser: BaseCommand {
@@ -92,11 +93,12 @@ class MessageParser: BaseCommand {
         }
 
         if StateManager.isMuted(chat: message.chat, user: from, at: message.date) {
+            let queue = DispatchQueue(label: "MessageParser")
             firstly {
                 sendApi.deleteMessage(chatId: .int(id: self.message.chat.id), messageId: self.message.messageId)
-            }.done { bool in
+            }.done(on: queue) { bool in
                 // Gay
-            }.catch { error in
+            }.catch(on: queue) { error in
                 let text = "I need the *delete_messages* permission to successfully mute offensive people!"
                 sendApi.sendMessage(message: TelegramSendMessage(chatId: self.message.chat.id, text: text, parseMode: .markdown))
             }

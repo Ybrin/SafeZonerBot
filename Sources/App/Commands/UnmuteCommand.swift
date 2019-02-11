@@ -9,6 +9,7 @@ import Vapor
 import TelegramBot
 import TelegramBotPromiseKit
 import PromiseKit
+import Dispatch
 
 class UnmuteCommand: BaseCommand {
 
@@ -31,25 +32,26 @@ class UnmuteCommand: BaseCommand {
 
         let sendApi = TelegramSendApi(token: token, provider: SnakeTelegramProvider(token: token))
 
+        let queue = DispatchQueue(label: "UnmuteCommand")
         firstly {
             sendApi.getChatMember(chatId: .int(id: chatId), userId: from.id)
-            }.then { chatMember -> PromiseKit.Promise<TelegramMessage> in
-                let text: String
-                if chatMember.status == .administrator || chatMember.status == .creator {
-                    text = "Please tag the former offender, now PC bro, in your next message!"
+        }.then(on: queue) { chatMember -> PromiseKit.Promise<TelegramMessage> in
+            let text: String
+            if chatMember.status == .administrator || chatMember.status == .creator {
+                text = "Please tag the former offender, now PC bro, in your next message!"
 
-                    // Save session
-                    StateManager.addAboutToMute(chat: self.message.chat, userId: from.id, type: .unmute)
-                } else {
-                    text = "This command may only be used by administrators and creators of this group!"
-                }
+                // Save session
+                StateManager.addAboutToMute(chat: self.message.chat, userId: from.id, type: .unmute)
+            } else {
+                text = "This command may only be used by administrators and creators of this group!"
+            }
 
-                return sendApi.sendMessage(message: TelegramSendMessage(chatId: chatId, text: text))
-            }.done { message in
+            return sendApi.sendMessage(message: TelegramSendMessage(chatId: chatId, text: text))
+        }.done(on: queue) { message in
 
-            }.catch { error in
-                print("*** MuteCommand: ERROR IN PROMISE CHAIN ***")
-                print(error)
+        }.catch(on: queue) { error in
+            print("*** UnmuteCommand: ERROR IN PROMISE CHAIN ***")
+            print(error)
         }
     }
 }

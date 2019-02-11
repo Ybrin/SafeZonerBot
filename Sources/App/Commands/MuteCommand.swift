@@ -9,6 +9,7 @@ import Vapor
 import TelegramBot
 import TelegramBotPromiseKit
 import PromiseKit
+import Dispatch
 
 class MuteCommand: BaseCommand {
 
@@ -31,9 +32,10 @@ class MuteCommand: BaseCommand {
 
         let sendApi = TelegramSendApi(token: token, provider: SnakeTelegramProvider(token: token))
 
+        let queue = DispatchQueue(label: "MuteCommand")
         firstly {
             sendApi.getChatMember(chatId: .int(id: chatId), userId: from.id)
-        }.then { chatMember -> PromiseKit.Promise<TelegramMessage> in
+        }.then(on: queue) { chatMember -> PromiseKit.Promise<TelegramMessage> in
             let text: String
             if chatMember.status == .administrator || chatMember.status == .creator {
                 text = "Please tag the offender in your next message (optionally with the time to mute in seconds)!"
@@ -45,9 +47,9 @@ class MuteCommand: BaseCommand {
             }
 
             return sendApi.sendMessage(message: TelegramSendMessage(chatId: chatId, text: text))
-        }.done { message in
+        }.done(on: queue) { message in
 
-        }.catch { error in
+        }.catch(on: queue) { error in
             print("*** MuteCommand: ERROR IN PROMISE CHAIN ***")
             print(error)
         }

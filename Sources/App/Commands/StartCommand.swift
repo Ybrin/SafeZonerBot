@@ -9,6 +9,7 @@ import Vapor
 import TelegramBot
 import TelegramBotPromiseKit
 import PromiseKit
+import Dispatch
 
 class StartCommand: BaseCommand {
 
